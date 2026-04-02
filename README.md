@@ -27,7 +27,9 @@ Lutosławski harmonic tools. Menu options:
    | J | `[0,3,6,11]` | Lutosławski (+3+3+5) |
    | K | `[0,5,8,11]` | Lutosławski (+5+3+3) |
 
-2. **Interval-pairing 12-tone chord generator** — given a set of interval classes (e.g. `2,5` or `1,5,6`), enumerate all 12-tone ordered pitch-class sequences that can be built by freely stacking those interval classes (each applied as either `+ic` or `+(12−ic)` semitones). All 12 transpositions are included.
+2. **Feasible code-triple enumeration** — enumerate all ordered chord-type triples from `AAA` to `KKK` (A–K, no I) and keep only triples that admit at least one valid full-aggregate solution under feature 1.
+
+3. **Interval-pairing 12-tone chord generator** — given a set of interval classes (e.g. `2,5` or `1,5,6`), enumerate all 12-tone ordered pitch-class sequences that can be built by freely stacking those interval classes (each applied as either `+ic` or `+(12−ic)` semitones). All 12 transpositions are included.
 
 ### Requirements
 

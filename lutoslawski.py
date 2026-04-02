@@ -125,6 +125,56 @@ def print_solutions(code3):
 		print()
 
 
+def has_solution_for_triple(code3, variants_cache):
+	"""
+	Return True if a 3-code combination has at least one valid full-aggregate solution.
+	"""
+	high_code, mid_code, low_code = code3
+	high_candidates = variants_cache[high_code]
+	mid_candidates = variants_cache[mid_code]
+	low_candidates = variants_cache[low_code]
+
+	for high, mid, low in product(high_candidates, mid_candidates, low_candidates):
+		hs, ms, ls = set(high), set(mid), set(low)
+		if hs & ms:
+			continue
+		if hs & ls:
+			continue
+		if ms & ls:
+			continue
+		return True
+
+	return False
+
+
+def enumerate_feasible_code_triples():
+	"""
+	Enumerate all ordered chord-code triples (A..K, no I) that admit at least one
+	Lutoslawski 3-strand solution.
+	"""
+	codes = sorted(CHORD_TEMPLATES.keys())
+	variants_cache = {code: chord_variants(code) for code in codes}
+
+	feasible = []
+	for h, m, l in product(codes, repeat=3):
+		triple = f"{h}{m}{l}"
+		if has_solution_for_triple(triple, variants_cache):
+			feasible.append(triple)
+
+	return feasible
+
+
+def print_feasible_code_triples():
+	"""
+	Print all feasible ordered code triples for feature 2.
+	"""
+	feasible = enumerate_feasible_code_triples()
+
+	print(f"Total feasible triples: {len(feasible)}")
+	for triple in feasible:
+		print(triple)
+
+
 def parse_interval_pattern(text):
 	"""
 	Parse an interval-pairing pattern such as "2,5" or "[1,5,6]".
@@ -232,17 +282,20 @@ def main():
 	try:
 		print("Choose an option:")
 		print("1) Solve a 3-strand Lutoslawski chord-code problem")
-		print("2) Generate interval-pairing 12-tone chords")
+		print("2) Enumerate feasible chord-code triples (A..K, ordered)")
+		print("3) Generate interval-pairing 12-tone chords")
 
-		choice = input("Enter choice (1 or 2): ").strip()
+		choice = input("Enter choice (1, 2, or 3): ").strip()
 		if choice == "1":
 			text = input("Enter 3 chord codes (e.g., CHC, BKB, AAA): ").strip()
 			print_solutions(text)
 		elif choice == "2":
+			print_feasible_code_triples()
+		elif choice == "3":
 			text = input("Enter an interval pattern (e.g., 2,5 or 1,5,6): ").strip()
 			print_interval_pairing_chords(text)
 		else:
-			raise ValueError("choice must be 1 or 2.")
+			raise ValueError("choice must be 1, 2, or 3.")
 	except Exception as e:
 		print(f"Error: {e}")
 
