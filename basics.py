@@ -3,6 +3,89 @@ from collections import defaultdict
 import ast
 
 
+def normalize_pc_set(pc_set):
+    """
+    Normalize a pc set to sorted unique pitch classes in 0..11.
+    """
+    return sorted({int(p) % 12 for p in pc_set})
+
+
+def transpose_to_zero(sorted_pcs):
+    """
+    Transpose a sorted pitch-class list so its first element becomes 0.
+    """
+    if not sorted_pcs:
+        return tuple()
+    first = sorted_pcs[0]
+    return tuple(p - first for p in sorted_pcs)
+
+
+def best_rotation_form(pcs):
+    """
+    Return the best normal order (transposed to 0) among all rotations.
+
+    Comparison rule:
+    1) smallest outer span,
+    2) if tied, lexicographically smallest adjacent-interval sequence,
+    3) if still tied, lexicographically smallest zeroed tuple.
+    """
+    m = len(pcs)
+    if m <= 1:
+        return tuple(pcs)
+
+    best_key = None
+    best_form = None
+
+    for i in range(m):
+        rotated = pcs[i:] + [p + 12 for p in pcs[:i]]
+        zeroed = tuple(x - rotated[0] for x in rotated)
+        span = zeroed[-1]
+        adjacent = tuple(zeroed[j + 1] - zeroed[j] for j in range(m - 1))
+        key = (span, adjacent, zeroed)
+
+        if best_key is None or key < best_key:
+            best_key = key
+            best_form = zeroed
+
+    return best_form
+
+
+def invert_pc_set(pcs):
+    """
+    Invert a normalized pc set around 0 and return sorted unique pitch classes.
+    """
+    return sorted((-p) % 12 for p in pcs)
+
+
+def prime_form(pc_set):
+    """
+    Return the prime form under rotation + transposition + inversion.
+
+    Rule used:
+    1) find best normal order for original pc set,
+    2) find best normal order for inverted pc set,
+    3) choose the smaller one by the same ordering rule.
+    """
+    pcs = normalize_pc_set(pc_set)
+    original_form = best_rotation_form(pcs)
+    inverted_form = best_rotation_form(invert_pc_set(pcs))
+
+    def form_key(form):
+        span = form[-1] if form else 0
+        adjacent = tuple(form[j + 1] - form[j] for j in range(len(form) - 1))
+        return (span, adjacent, form)
+
+    return min(original_form, inverted_form, key=form_key)
+
+
+def is_prime_form(pc_set):
+    """
+    Check whether a pc set is already in prime form (with inversion equivalence).
+    """
+    pcs = normalize_pc_set(pc_set)
+    return transpose_to_zero(pcs) == prime_form(pcs)
+
+
 def interval_vector(pc_set):
     """
     Compute the interval vector of a pitch-class set.
@@ -61,9 +144,11 @@ def generate_pc_sets_of_size(m):
 
 def print_interval_vectors_for_size(m):
     """
-    Print all pc sets of size m and their interval vectors.
+    Print prime-form pc sets of size m and their interval vectors.
     """
     for pc_set in generate_pc_sets_of_size(m):
+        if not is_prime_form(pc_set):
+            continue
         vec = interval_vector(pc_set)
         vec_str = "".join(map(str, vec))
         print(f"{pc_set} -> {vec_str}")
@@ -71,7 +156,7 @@ def print_interval_vectors_for_size(m):
 
 def print_shared_interval_vectors_for_size(m):
     """
-    Print interval vectors that correspond to two or more pc sets of size m.
+    Print interval vectors that correspond to two or more prime-form pc sets of size m.
 
     Output is sorted by lexicographic order of the interval vector
     (comparing ic1, then ic2, ..., then ic6).
@@ -79,6 +164,8 @@ def print_shared_interval_vectors_for_size(m):
     groups = defaultdict(list)
 
     for pc_set in generate_pc_sets_of_size(m):
+        if not is_prime_form(pc_set):
+            continue
         vec_key = tuple(interval_vector(pc_set))
         groups[vec_key].append(pc_set)
 
@@ -88,7 +175,8 @@ def print_shared_interval_vectors_for_size(m):
     for vec, sets in shared_items:
         print(f"interval vector {list(vec)}:")
         for pc_set in sets:
-            print(f"  {pc_set}")
+            pc_set_text = ",".join(map(str, pc_set))
+            print(f"  {pc_set_text}")
         print()
 
 
